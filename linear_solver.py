@@ -1,6 +1,10 @@
 from pulp import *
+from game import find_saddle_points
 
-def print_mixed_strategy(payoff_matrix, optimalization=LpMinimize):
+
+def print_mixed_strategy(
+        payoff_matrix, optimalization=LpMinimize, added_value=0
+):
     """
     Minimize for player A - row,
     Maximaze for player B - columns
@@ -44,22 +48,70 @@ def print_mixed_strategy(payoff_matrix, optimalization=LpMinimize):
         )
         var_values.append(var_value)
 
-    v = 1 / sum(var_values)
-    print 'V: {}'.format(v)
+    v = (1 / sum(var_values)) - added_value
+    print 'V: {:.2f}'.format(v)
     # actually it's what we need to determine - how often play given strategy
     frequencies = []
     for var in variables:
-        print '{}: {}'.format(var.name, value(var) * v)
+        print '{}: {:.2f}'.format(var.name, value(var) * v)
+
+
+def make_matrix_positive(matrix):
+    """
+    Modify  matrix in place and return value which was added
+    :param matrix:
+    :return:
+    """
+    rows_min = []
+    added_value = 0
+    for row in matrix:
+        rows_min.append(min(row))
+
+    min_value = min(rows_min)
+    if min_value < 0:
+        added_value = abs(min_value)
+
+    # add value to each cell
+    for row in matrix:
+        for i, cell in enumerate(row):
+            row[i] += added_value
+
+    return added_value
+
+
+def solve_game(payoff_matrix):
+    """
+    Solve game by following steps:
+        - find saddle points
+        - remove dominated columns
+        - find mixed strategies
+    :param payoff_matrix:
+    :return:
+    """
+
+    added_value = make_matrix_positive(payoff_matrix)
+
+    saddle_points = find_saddle_points(payoff_matrix)
+    if saddle_points:
+        print 'Saddle Points {}'.format(saddle_points)
+        return
+
+    print 'Row Player Strategy'
+    print_mixed_strategy(payoff_matrix, LpMinimize, added_value)
+    print 'Column Player Strategy'
+    print_mixed_strategy(
+        [list(i) for i in zip(*payoff_matrix)],
+        LpMaximize,
+        added_value,
+    )
+
+
 # test
-payoff_matrix = [
+test_payoff_matrix = [
     [5, 0, 1],
     [2, 4, 3],
 ]
-print 'Row Player Strategy'
-print_mixed_strategy(payoff_matrix, LpMinimize)
-print 'Column Player Strategy'
-print_mixed_strategy([list(i) for i in zip(*payoff_matrix)], LpMaximize)
-
+solve_game(test_payoff_matrix)
 
 # test for our variant
 payoff_matrix = [
@@ -67,7 +119,4 @@ payoff_matrix = [
     [0.2, 1, ],
     [0.8, 0.8, ],
 ]
-print 'Row Player Strategy'
-print_mixed_strategy(payoff_matrix, LpMinimize)
-print 'Column Player Strategy'
-print_mixed_strategy([list(i) for i in zip(*payoff_matrix)], LpMaximize)
+#solve_game(payoff_matrix)

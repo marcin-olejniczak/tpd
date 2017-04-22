@@ -1,5 +1,7 @@
+import copy
 import json
 import numpy
+
 from pprint import pprint
 
 with open('config.json') as data_file:
@@ -54,12 +56,17 @@ def fill_min_max_columns(matrix):
 
     return list(zip(*transponsed))
 
-def find_saddle_points(matrix):
+
+def find_saddle_points(p_matrix):
     """
     Find sadlle points
-    :param matrix:
+    :param p_matrix:
     :return:
     """
+    matrix = copy.deepcopy(p_matrix)
+    matrix = fill_min_max_columns(
+        add_min_max_column_and_row(matrix)
+    )
     min_column = [row[len(row) - 1] for row in matrix[:len(matrix) - 1]]
     max_row = matrix[len(matrix) - 1]
     saddle_points = []
@@ -71,11 +78,10 @@ def find_saddle_points(matrix):
 
     return saddle_points
 
-matrix_with_min_max_calculated = fill_min_max_columns(
-    add_min_max_column_and_row(g_matrix)
-)
+payoff_matrix = [
+    [1.2, 0.4, ],
+    [0.2, 1, ],
+    [0.8, 0.8, ],
+]
 
-print numpy.matrix(
-    matrix_with_min_max_calculated
-)
-print find_saddle_points(matrix_with_min_max_calculated)
+print find_saddle_points(payoff_matrix)
